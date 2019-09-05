@@ -1,7 +1,7 @@
-EXEC = rooming
+EXEC = rooming-ledsrv
 
-CFLAGS  = -W -Wall -O2 -I../rpi_ws281x/
-LDFLAGS = -L../rpi_ws281x/ -lws2811 -lhiredis
+CFLAGS  = -W -Wall -O2 -I/opt/rpi_ws281x/
+LDFLAGS = -L/opt/rpi_ws281x/ -lws2811 -lhiredis
 
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)

@@ -1,4 +1,4 @@
-EXEC = pannel-wserver
+EXEC = rooming-wserver
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
 
