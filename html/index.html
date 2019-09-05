@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Pannel Color</title>
+
+	<meta charset="utf-8" />
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script type="text/javascript" src="js/iro.min.js"></script>
+    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+</head>
+
+<body>
+    <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+      <h1 class="display-4">Room Light Color Selectors</h1>
+      <p class="lead">Welcome to Maxux's Room. Feel free to set the color of your mood !</p>
+    </div>
+
+    <div class="container">
+      <div class="card-deck text-center">
+        <!-- Two First LED -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Front Line (Top)</h4>
+          </div>
+          <div class="card-body">
+            [Soon]
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Front Line (Bottom)</h4>
+          </div>
+          <div class="card-body">
+            [Soon]
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="card-deck text-center">
+        <!-- Lateral LED -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Left Line</h4>
+          </div>
+          <div class="card-body">
+            [Soon]
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Right Line</h4>
+          </div>
+          <div class="card-body">
+            [Soon]
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="card-deck text-center">
+        <!-- Read LED and Pannel -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Back Line</h4>
+          </div>
+          <div class="card-body">
+            [Soon]
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Text Pannel</h4>
+          </div>
+          <div class="card-body">
+            <div class="wheel" id="led-pannel-wheel"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+    var colorWheel = new iro.ColorPicker("#led-pannel-wheel", {
+        width: 290,
+        height: 290,
+        padding: 4,
+        markerRadius: 8,
+        color: "rgb(127, 0, 0)",
+        css: {
+            "#logo": {
+              "stroke": "rgb"
+            },
+            ".subtitle": {
+              "color": "rgb"
+            }
+        }
+    });
+
+    var ws = new WebSocket("ws://" + location.host + ":7681");
+    ws.onmessage = function(msg) {
+        var json = JSON.parse(msg.data);
+
+        if(json['type'] != undefined && json['type'] == 'initial') {
+            console.log("Applying current color");
+            console.log(colorWheel);
+            colorWheel.color.set({r: json['red'], g: json['green'], b: json['blue']});
+        }
+    }
+
+
+    colorWheel.on("color:change", function(color, changes) {
+        // console.log(color.rgb);
+
+        if(ws.readyState == 1)
+            ws.send(JSON.stringify(color.rgb));
+    });
+
+    function resizeWindow(event) {
+        var card = $(".card-body")[0];
+        var width = card.clientWidth;
+        console.log(width);
+        // colorWheel.resize(width - 40);
+    }
+
+    // resize initial and update handler
+    window.onresize = resizeWindow;
+    resizeWindow();
+	</script>
+
+
+</body>
+</html>
