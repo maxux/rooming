@@ -196,7 +196,7 @@ static int signal_intercept(int signal, void (*function)(int)) {
 
 int main(int argc, char **argv) {
     int port = 7681;
-    struct lws_context *context;
+    struct lws_context *kntxt;
     int listen_port = port;
     struct lws_context_creation_info info;
     char *interface = DEFAULT_INTERFACE;
@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
     // signal handling
     signal_intercept(SIGINT, sighandler);
 
-    if((context = lws_create_context(&info)) == NULL) {
+    if((kntxt = lws_create_context(&info)) == NULL) {
         lwsl_err("libwebsocket init failed\n");
         exit(EXIT_FAILURE);
     }
@@ -251,9 +251,9 @@ int main(int argc, char **argv) {
     printf("[+] waiting for clients\n");
 
     while(n >= 0 && !stop_requested)
-        n = lws_service(context, 10);
+        n = lws_service(kntxt, 10);
 
-    lws_context_destroy(context);
+    lws_context_destroy(kntxt);
 
     return stop_requested;
 }
