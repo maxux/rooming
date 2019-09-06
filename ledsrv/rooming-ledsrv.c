@@ -9,6 +9,7 @@
 #include <net/if.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/mman.h>
@@ -39,6 +40,33 @@ ws2811_t ledstring = {
     },
 };
 
+typedef struct frames_t {
+    size_t frames;
+    int fps;
+    struct timeval pf;
+    struct timeval init;
+
+} frames_t;
+
+float difftv(struct timeval *begin, struct timeval *end) {
+    return (begin->tv_sec + begin->tv_usec / 1000000.0) - (end->tv_sec + end->tv_usec / 1000000.0);
+}
+
+int newframe(frames_t *f) {
+    struct timeval now;
+    float dt;
+
+    f->frames += 1;
+
+    gettimeofday(&now, NULL);
+    dt = difftv(&now, &f->pf);
+
+    f->fps = 1 / dt;
+    f->pf = now;
+
+    return 0;
+}
+
 void diep(char *str) {
     perror(str);
     exit(EXIT_FAILURE);
@@ -57,6 +85,7 @@ int main() {
     int ret;
     redisContext *redis;
     redisReply *reply;
+    frames_t frames;
 
     printf("[+] initializing rooming lights\n");
 
@@ -64,6 +93,10 @@ int main() {
         fprintf(stderr, "[-] ws2811_init failed: %s\n", ws2811_get_return_t_str(ret));
         exit(EXIT_FAILURE);
     }
+
+    memset(&frames, 0, sizeof(frames_t));
+    gettimeofday(&frames.init, NULL);
+    frames.pf = frames.init;
 
     if(!(redis = redisConnect("localhost", 6379)))
         diep("redis");
@@ -94,7 +127,8 @@ int main() {
 
         char *buffer = reply->element[2]->str;
 
-        printf("[+] applying new matrix layout\n");
+        newframe(&frames);
+        printf("[+] applying frame %lu [%d fps]\n", frames.frames, frames.fps);
 
         for(int i = 0; i < LEDS_LENGTH; i++) {
             ledstring.channel[0].leds[i] = buffer[1] << 16 | buffer[0] << 8 | buffer[2];
