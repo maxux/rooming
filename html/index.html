@@ -21,27 +21,18 @@
 
 <body>
     <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
-      <h1 class="display-4">Room Light Color Selectors</h1>
-      <p class="lead">Welcome to Maxux's Room. Feel free to set the color of your mood !</p>
+      <h1 class="display-4">Room Lights</h1>
+      <p class="lead">Feel free to set the color of your mood !</p>
     </div>
 
     <div class="container">
       <div class="card-deck text-center">
-        <!-- Two First LED -->
         <div class="card">
           <div class="card-header">
-            <h4 class="font-weight-normal">Front Line (Top)</h4>
+            <h4 class="font-weight-normal">Global Color</h4>
           </div>
           <div class="card-body">
-            [Soon]
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h4 class="font-weight-normal">Front Line (Bottom)</h4>
-          </div>
-          <div class="card-body">
-            [Soon]
+            <div class="wheel" id="led-pannel-wheel-global"></div>
           </div>
         </div>
       </div>
@@ -49,13 +40,33 @@
       <hr>
 
       <div class="card-deck text-center">
-        <!-- Lateral LED -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Front Line</h4>
+          </div>
+          <div class="card-body">
+            <div class="wheel" id="led-pannel-wheel-front"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h4 class="font-weight-normal">Back Line</h4>
+          </div>
+          <div class="card-body">
+            <div class="wheel" id="led-pannel-wheel-back"></div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="card-deck text-center">
         <div class="card">
           <div class="card-header">
             <h4 class="font-weight-normal">Left Line</h4>
           </div>
           <div class="card-body">
-            [Soon]
+            <div class="wheel" id="led-pannel-wheel-left"></div>
           </div>
         </div>
         <div class="card">
@@ -63,37 +74,37 @@
             <h4 class="font-weight-normal">Right Line</h4>
           </div>
           <div class="card-body">
-            [Soon]
+            <div class="wheel" id="led-pannel-wheel-right"></div>
           </div>
         </div>
       </div>
 
       <hr>
 
-      <div class="card-deck text-center">
-        <!-- Read LED and Pannel -->
-        <div class="card">
-          <div class="card-header">
-            <h4 class="font-weight-normal">Back Line</h4>
-          </div>
-          <div class="card-body">
-            [Soon]
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h4 class="font-weight-normal">Text Pannel</h4>
-          </div>
-          <div class="card-body">
-            <div class="wheel" id="led-pannel-wheel"></div>
-          </div>
-        </div>
+      <div id="presets">
+
       </div>
+
+      <hr>
+
+      <div id="status">
+          <span class="status-front"></span>
+
+          <span class="name">, </span>
+          <span class="status-right"></span>
+
+          <span class="name">, </span>
+          <span class="status-back"></span>
+
+          <span class="name">, </span>
+          <span class="status-left"></span>
+      </div>
+
     </div>
 
     <script type="text/javascript">
-    var colorWheel = new iro.ColorPicker("#led-pannel-wheel", {
-        width: 290,
+    var colorOptions = {
+        width: 250,
         height: 290,
         padding: 4,
         markerRadius: 8,
@@ -106,26 +117,93 @@
               "color": "rgb"
             }
         }
-    });
+    };
 
+    function c(r, g, b) {
+        return {"r": r, "g": g, "b": b};
+    }
+
+    var presets = [
+        // name,    front             right             back              right
+        ["Black",   c(0, 0, 0),       c(0, 0, 0),       c(0, 0, 0),       c(0, 0, 0)],
+        ["White",   c(255, 255, 255), c(255, 255, 255), c(255, 255, 255), c(255, 255, 255)],
+        ["Blue 1",  c(0, 0, 54),      c(0, 65, 65),     c(65, 0, 82),     c(0, 65, 65)],
+        ["Sunset",  c(255, 94, 0),    c(255, 0, 17),    c(255, 38, 0),    c(255, 0, 17)],
+        ["Chill",   c(0, 10, 41),     c(0, 10, 10),     c(0, 8, 8),       c(0, 8, 8)],
+    ];
+
+    var wheelslist = ["global", "front", "right", "back", "left"];
+    var wheels = {};
+
+    function upstatus(wheel, color) {
+        var updates = [wheel];
+
+        if(wheel == wheelslist[0])
+            updates = wheelslist;
+
+        for(var idx in updates)
+            $(".status-" + updates[idx]).html('(' + color.r + ", " + color.g + ", " + color.b + ')');
+    }
+
+    function onchange(wheel, color, changes) {
+        console.log("Updating:", wheel, color);
+        upstatus(wheel, color.rgb);
+
+        if(ws.readyState == 1)
+            ws.send(JSON.stringify({'target': wheel, 'color': color.rgb}));
+    }
+
+    // initialize wheels
+    for(var idx in wheelslist) {
+        let wheel = wheelslist[idx];
+
+        wheels[wheel] = new iro.ColorPicker("#led-pannel-wheel-" + wheel, colorOptions);
+        wheels[wheel].on("input:change", function(color, changes) {
+            onchange(wheel, color, changes);
+        });
+    }
+
+    // initialize presets
+    for(let idx in presets) {
+        var attrs = {
+            'onclick': 'setpreset(' + idx + ');',
+            'class': 'btn btn-primary',
+        };
+
+        var button = $("<button>", attrs).html(presets[idx][0]);
+        $("#presets").append(button);
+    }
+
+    function setpreset(id) {
+        for(var colorid in presets[id]) {
+            if(colorid == 0)
+                continue;
+
+            var wheelname = wheelslist[parseInt(colorid)];
+            var color = presets[id][colorid];
+            console.log(color);
+
+            wheels[wheelname].color.set(color);
+            onchange(wheelname, {"rgb": color}, {});
+        }
+    }
+
+    // initialize websockets
     var ws = new WebSocket("ws://" + location.host + ":7681");
     ws.onmessage = function(msg) {
         var json = JSON.parse(msg.data);
 
         if(json['type'] != undefined && json['type'] == 'initial') {
             console.log("Applying current color");
-            console.log(colorWheel);
-            colorWheel.color.set({r: json['red'], g: json['green'], b: json['blue']});
+            for(var wheel in wheelslist) {
+                var wheelname = wheelslist[wheel];
+                var color = {"r": json["red"], "g": json["green"], "b": json["blue"]};
+
+                wheels[wheelname].color.set(color);
+                upstatus(wheelname, color);
+            }
         }
     }
-
-
-    colorWheel.on("color:change", function(color, changes) {
-        // console.log(color.rgb);
-
-        if(ws.readyState == 1)
-            ws.send(JSON.stringify(color.rgb));
-    });
 
     function resizeWindow(event) {
         var card = $(".card-body")[0];
@@ -137,7 +215,7 @@
     // resize initial and update handler
     window.onresize = resizeWindow;
     resizeWindow();
-	</script>
+    </script>
 
 
 </body>
