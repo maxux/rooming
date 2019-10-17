@@ -21,6 +21,7 @@ typedef struct color_t {
     uint8_t red;
     uint8_t green;
     uint8_t blue;
+    char *target;
 
 } color_t;
 
@@ -41,27 +42,73 @@ void diep(char *str) {
     exit(EXIT_FAILURE);
 }
 
+void color_fill(color_t *color, char *buffer) {
+    // setting default value for global target effect
+    int from = 0;
+    int length = LEDS_LENGTH;
+
+    // setting segment from target name
+    if(strcmp(color->target, "front") == 0)
+        length = 240;
+
+    if(strcmp(color->target, "back") == 0) {
+        from = 540;
+        length = 240;
+    }
+
+    if(strcmp(color->target, "left") == 0) {
+        from = 780;
+        length = 300;
+    }
+
+    if(strcmp(color->target, "right") == 0) {
+        from = 240;
+        length = 300;
+    }
+
+    printf("[+] setting leds from %d -> %d\n", from, length);
+
+    // setting buffer to the first led to change
+    buffer += from * 3;
+
+    // changing this segment
+    for(int i = 0; i < length; i++) {
+        buffer[0] = color->red;
+        buffer[1] = color->green;
+        buffer[2] = color->blue;
+        buffer += 3;
+    }
+}
+
 color_t *color_json(void *buffer, size_t length, color_t *color) {
     json_t *root;
     json_error_t error;
     json_t *object;
+    json_t *request;
 
     if(!(root = json_loadb(buffer, length, 0, &error))) {
         fprintf(stderr, "[-] json error: on line %d: %s\n", error.line, error.text);
         return NULL;
     }
 
-    object = json_object_get(root, "r");
+    request = json_object_get(root, "color");
+
+    object = json_object_get(request, "r");
     if(json_is_integer(object))
         color->red = json_integer_value(object);
 
-    object = json_object_get(root, "g");
+    object = json_object_get(request, "g");
     if(json_is_integer(object))
         color->green = json_integer_value(object);
 
-    object = json_object_get(root, "b");
+    object = json_object_get(request, "b");
     if(json_is_integer(object))
         color->blue = json_integer_value(object);
+
+    object = json_object_get(root, "target");
+
+    free(color->target);
+    color->target = strdup(json_string_value(object));
 
     json_decref(root);
 
@@ -133,17 +180,10 @@ static int callback_color(struct lws *wsi, enum lws_callback_reasons reason, voi
         pss->len = (unsigned int) len;
 
         if(lws_is_final_fragment(wsi)) {
-            printf(">> <%.*s>\n", pss->len, pss->buf + LWS_PRE);
+            printf("[+] json: %.*s\n", pss->len, pss->buf + LWS_PRE);
 
             if(color_json(pss->buf + LWS_PRE, pss->len, &pannel->color)) {
-                char *buffer = pannel->buffer;
-
-                for(int i = 0; i < LEDS_LENGTH; i++) {
-                    buffer[0] = pannel->color.red;
-                    buffer[1] = pannel->color.green;
-                    buffer[2] = pannel->color.blue;
-                    buffer += 3;
-                }
+                color_fill(&pannel->color, pannel->buffer);
 
                 printf("[+] sending frame to redis\n");
 
