@@ -1,7 +1,21 @@
-#led-pannel-wheel {
-    margin: auto;
+body {
+    font-family: 'Darker Grotesque', sans-serif;
 }
 
 .iro__colorPicker {
     margin: auto;
+}
+
+.display-4 {
+    font-size: 3.1rem;
+}
+
+button {
+    margin: 0.3em;
+}
+
+#status {
+    font-family: monospace;
+    margin-bottom: 2em;
+    text-align: center;
 }
