@@ -112,15 +112,14 @@ int main() {
     render();
 
     while(1) {
+        // fetch last element on redis
         reply = redisCommand(redis, "BRPOP light 0");
-        // freeReplyObject(reply);
 
+        // clean list, we only proceed last element
         cleaner = redisCommand(redis, "DEL light");
         freeReplyObject(cleaner);
 
-        // while(redisGetReply(redis, (void **) &reply) == REDIS_OK) {
-
-        // waiting for a valid matrix message
+        // checking for a valid matrix message
         if(reply->type != REDIS_REPLY_ARRAY || reply->elements != 2)
             goto nextmsg;
 
