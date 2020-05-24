@@ -188,7 +188,7 @@ static int callback_color(struct lws *wsi, enum lws_callback_reasons reason, voi
                 printf("[+] sending frame to redis\n");
 
                 redisReply *reply;
-                reply = redisCommand(pannel->redis, "PUBLISH light %b", pannel->buffer, pannel->buflen);
+                reply = redisCommand(pannel->redis, "RPUSH light %b", pannel->buffer, pannel->buflen);
                 freeReplyObject(reply);
             }
         }

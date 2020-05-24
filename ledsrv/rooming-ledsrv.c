@@ -84,7 +84,7 @@ void render() {
 int main() {
     int ret;
     redisContext *redis;
-    redisReply *reply;
+    redisReply *reply, *cleaner;
     frames_t frames;
 
     printf("[+] initializing rooming lights\n");
@@ -111,21 +111,26 @@ int main() {
 
     render();
 
-    reply = redisCommand(redis, "SUBSCRIBE light");
-    freeReplyObject(reply);
+    while(1) {
+        reply = redisCommand(redis, "BRPOP light 0");
+        // freeReplyObject(reply);
 
-    while(redisGetReply(redis, (void **) &reply) == REDIS_OK) {
+        cleaner = redisCommand(redis, "DEL light");
+        freeReplyObject(cleaner);
+
+        // while(redisGetReply(redis, (void **) &reply) == REDIS_OK) {
+
         // waiting for a valid matrix message
-        if(reply->type != REDIS_REPLY_ARRAY || reply->elements != 3)
+        if(reply->type != REDIS_REPLY_ARRAY || reply->elements != 2)
             goto nextmsg;
 
-        if(strcmp(reply->element[0]->str, "message"))
+        if(strcmp(reply->element[0]->str, "light"))
             goto nextmsg;
 
-        if(reply->element[2]->len != (LEDS_LENGTH * 3))
+        if(reply->element[1]->len != (LEDS_LENGTH * 3))
             goto nextmsg;
 
-        char *buffer = reply->element[2]->str;
+        char *buffer = reply->element[1]->str;
 
         newframe(&frames);
         printf("[+] applying frame %lu [%d fps]\n", frames.frames, frames.fps);
