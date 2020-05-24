@@ -69,7 +69,7 @@ int animate(redisContext *redis, char *imgfile) {
         printf("[+] sending line: %d\n", h);
 
         redisReply *reply;
-        reply = redisCommand(redis, "PUBLISH light %b", rawptr + (h * width * 3), LEDS_LENGTH * 3);
+        reply = redisCommand(redis, "RPUSH light %b", rawptr + (h * width * 3), LEDS_LENGTH * 3);
         freeReplyObject(reply);
 
         usleep(50000);
